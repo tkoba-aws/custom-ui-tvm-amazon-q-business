@@ -1,0 +1,7 @@
+{
+    "allowList":[
+        "http://localhost:5174",
+        "https://www.my-cool-website.com",
+        "https://mysubdomain.my-cool-website.com"
+    ]
+}
