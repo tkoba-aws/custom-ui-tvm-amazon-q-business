@@ -53,7 +53,8 @@ MyOidcIssuerStack.QBizAssumeRoleARN = arn:aws:iam::XXXXXXXX:role/q-biz-custom-oi
 
 1. Change directory to `amzn-q-custom-ui`.
 2. Run `npm install --save` to install dependencies.
-3. Create a `.env` file at the root of the directory with these values. Note: the email can be any email 😃
+3. Create a `.env` file at the root of the directory with these values. 
+4. Note: the email should ideally be acquired by your user authentication mechanism.
 
 ```
 VITE_QBIZ_APP_ID=<q-biz-app-id>
