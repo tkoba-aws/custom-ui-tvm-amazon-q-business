@@ -1,14 +1,16 @@
 # Amazon Q Business Token Vending Machine and QUI
 
-Deploy a fully customizable Amazon Q Business AI Assistant experience.
+> **Pre-requisite**
+> This solution requires using Amazon Q Business with IAM Identity Provider and is not compatible with IAM Identity Center (IDC) based auth setup. For calling Amazon Q Business APIs while using IDC, check [this GitHub repository](https://github.com/aws-samples/custom-web-experience-with-amazon-q-business).
 
-This solution includes:
+
+Deploy a fully customizable Amazon Q Business AI Assistant experience. This solution includes:
 
 ## 1. TVM - Token Vending Machine
 
-The idea is to create a handshake mechanism between an enterprise authenticated app and Q Business through a secure **token vending machine (TVM)**. The TVM is implemented via a Single Lambda and API gateway using OIDC Specifications and can federate with IAM Identity Provider which is used with Q Business App’s Auth setup . The TVM can accept an email address of any authenticated user and issue an OIDC Token which is used to generate SigV4 credentials in order to assume an identity-aware role for Q Business. This credential is then used to call Q Business APIs. 
+TVM is a handshake mechanism between an enterprise authenticated app and Amazon Q Business through a secure **token vending machine (TVM)**. The TVM is implemented using a single AWS Lambda function and API gateway using OIDC Specifications and can federate with IAM Identity Provider which is used with Amazon Q Business as authentication mechanism. The TVM can accept an email address of any authenticated user and issue an OIDC Token which is used to generate SigV4 credentials in order to assume an identity-aware role for Amazon Q Business. This credential can then be used to call Amazon Q Business APIs. 
 
-The TVM, which acts as an OIDC provider, comes with it’s own issuer url, `/.well-known/openid-configuration`  as well as `/.well-known/jwks.json` endpoints which are OIDC compliant. TVM OIDC provider uses a Public-Private key pair which is encrypted and stored with AWS SSM Parameter store. The TVM also comes with a `/token` endpoint responsible for issuing OIDC Identity Tokens using the private key. IAM Identity Provider makes use of the /.well-known/* endpoints and the public key to ensure the validity of the OIDC tokens issued by the `/token` endpoint and has permissions to Amazon Q Business API’s via an IAM Role and Trust relationships. In essence, when provided with a valid email address, the token issued by `/token` endpoint will be identity aware and can be used to assume the said IAM Role to generate identity aware SigV4 credentials for Amazon Q Business API calls.
+The TVM, which acts as an OIDC provider, comes with it’s own issuer url, `/.well-known/openid-configuration`  as well as `/.well-known/jwks.json` endpoints which are OIDC compliant. TVM OIDC provider uses a Public-Private key pair which is encrypted and stored with AWS SSM Parameter store. The TVM also comes with a `/token` endpoint responsible for issuing OIDC Identity Tokens using the private key. IAM Identity Provider makes use of the `/.well-known/*` endpoints and the public key to ensure the validity of the OIDC tokens issued by the `/token` endpoint and has permissions to Amazon Q Business API’s via an IAM Role and Trust relationships. In essence, when provided with a valid email address, the token issued by `/token` endpoint will be identity aware and can be used to assume the said IAM Role to generate identity aware SigV4 credentials for Amazon Q Business API calls.
 
 ![TVM](./images/TVM_Arch_Standalone.png)
 
@@ -49,6 +51,22 @@ MyOidcIssuerStack.QBizAssumeRoleARN = arn:aws:iam::XXXXXXXX:role/q-biz-custom-oi
 9. Setup a Q Business App, Select "AWS IAM Identity Provider" (**Note**: Uncheck "Web Experience" from "Outcome" when creating the Q Business App), select "OpenID Connect (OIDC)" provider type for authentication and select the above created Identity Provider from the drop down, in "Client ID" enter the Audience value from the stack output above `AudienceOutput` (also found in `cdk-outputs.json` file that captures the output of stack deployment, or in your Cloudformation stack deployment output).
 10. Setup your Q Business App following the rest of the steps by adding data sources etc.
 
+### Delete the TVM stack
+
+To delete the TVM stack-
+
+1. Change into the TVM stack root directory
+
+```bash
+cd amzn-q-auth-tvm
+```
+
+2. Run
+
+```bash
+cdk destroy
+```
+
 ### Deploy sample React App with Custom Amazon Q UI usage
 
 1. Change directory to `amzn-q-custom-ui`.
@@ -68,3 +86,4 @@ VITE_ISSUER=<issuer-url-from-stack>
 
 4. Run `npm run dev`
 5. Visit your app in `localhost` URL provided by Vite local server
+
