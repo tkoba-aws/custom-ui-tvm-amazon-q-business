@@ -1,6 +1,6 @@
 # Amazon Q Business Token Vending Machine and QUI
 
-> **Pre-requisite**
+> [!IMPORTANT] 
 > This solution requires using Amazon Q Business with IAM Identity Provider and is not compatible with IAM Identity Center (IDC) based auth setup. For calling Amazon Q Business APIs while using IDC, check [this GitHub repository](https://github.com/aws-samples/custom-web-experience-with-amazon-q-business).
 
 
