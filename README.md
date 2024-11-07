@@ -3,24 +3,10 @@
 > [!IMPORTANT] 
 > This solution requires using Amazon Q Business with [IAM Identity Provider](https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/create-application-iam.html), and does not support IAM Identity Center (IDC) based authentication setup. For calling Amazon Q Business APIs while using IDC, check [this GitHub repository](https://github.com/aws-samples/custom-web-experience-with-amazon-q-business).
 
+> [!CAUTION]
+> 🛑 STOP: Have you read the [Wiki](https://github.com/aws-samples/custom-ui-tvm-amazon-q-business/wiki)? We highly recommend reading through the Wiki first before deploying.
 
-Deploy a fully customizable Amazon Q Business AI Assistant experience. This solution includes:
-
-## 1. TVM - Token Vending Machine
-
-TVM is a handshake mechanism between an enterprise authenticated app and Amazon Q Business through a secure **token vending machine (TVM)**. The TVM is implemented using a single AWS Lambda function and API gateway using OIDC Specifications and can federate with IAM Identity Provider which is used with Amazon Q Business as authentication mechanism. The TVM can accept an email address of any authenticated user and issue an OIDC Token which is used to generate SigV4 credentials in order to assume an identity-aware role for Amazon Q Business. This credential can then be used to call Amazon Q Business APIs. 
-
-The TVM, which acts as an OIDC provider, comes with it’s own issuer url, `/.well-known/openid-configuration`  as well as `/.well-known/jwks.json` endpoints which are OIDC compliant. TVM OIDC provider uses a Public-Private key pair which is encrypted and stored with AWS SSM Parameter store. The TVM also comes with a `/token` endpoint responsible for issuing OIDC Identity Tokens using the private key. IAM Identity Provider makes use of the `/.well-known/*` endpoints and the public key to ensure the validity of the OIDC tokens issued by the `/token` endpoint and has permissions to Amazon Q Business API’s via an IAM Role and Trust relationships. In essence, when provided with a valid email address, the token issued by `/token` endpoint will be identity aware and can be used to assume the said IAM Role to generate identity aware SigV4 credentials for Amazon Q Business API calls.
-
-![TVM](./images/TVM_Arch_Standalone.png)
-
-## 2. QUI - Amazon Q AI Assistant Web Component
-
-In order to build a fully personalized user experience a web component (QUI, currently built with react) is provided. QUI works with TVM to make direct calls to Q Business APIs using short-term (usually 15 mins) SigV4 credentials using tokens issued by the TVM, using Amazon Q Business JavaScript SDK. You can use QUI from within your authenticated UX to natively embed (non-iframe) Q Business AI Assistant functionality.
-
-Currently, QUI requires TVM to be deployed and is the only mechanism that the custom web UI works with. TVM on the other hand, can not only be used for QUI, but can be used to build your own applications using Amazon Q Business APIs via simple auth mechanism.
-
-![QUI](./images/TVM_Arch_QUI.png)
+Deploy a fully customizable Amazon Q Business AI Assistant experience
 
 ### Deploy TVM (Token Vending Machine) for Amazon Q Business
 
