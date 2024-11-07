@@ -19,10 +19,11 @@ CDK_DEFAULT_ACCOUNT=<account_id>
 CDK_DEFAULT_REGION=<region>
 ```
 
-4. `cdk bootstrap`
-5. `cdk synth`
-6. `cdk deploy --require-approval never --outputs-file ./cdk-outputs.json --profile <profile>`
-7. Once the stack is deployed note the following values from the stack's output
+4. (Optional) If you intend to use TVM with Amazon Q Business custom UI (QUI) then edit the `amzn-q-auth-tvm/allow-list-domains.json` file to add your domain to the allow list.
+5. `cdk bootstrap`
+6. `cdk synth`
+7. `cdk deploy --require-approval never --outputs-file ./cdk-outputs.json --profile <profile>`
+8. Once the stack is deployed note the following values from the stack's output
 
 ```
 Outputs:
