@@ -176,8 +176,7 @@ def attach_permissions_to_role(role_name, account_id):
                     "Effect": "Allow",
                     "Action": [
                         "qbusiness:Chat",
-                        "qbusiness:ChatSync",
-                        "qbusiness:Retrieve",                
+                        "qbusiness:ChatSync",                        
                         "qbusiness:ListMessages",
                         "qbusiness:ListConversations",                
                         "qbusiness:PutFeedback",
