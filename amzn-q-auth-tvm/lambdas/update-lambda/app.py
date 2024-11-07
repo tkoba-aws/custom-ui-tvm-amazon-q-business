@@ -95,6 +95,7 @@ def create_iam_role(provider_arn, audience, account_id):
     try:
         # Define the trust policy
         iss_url = os.environ['API_URL'].replace('https://','').rstrip('/')
+        region = os.environ['AWS_REGION']
         trust_policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -140,7 +141,7 @@ def create_iam_role(provider_arn, audience, account_id):
                             "aws:SourceAccount": account_id
                         },
                         "ArnEquals": {
-                            "aws:SourceArn": f"arn:aws:qbusiness:us-east-1:{account_id}:application/*"
+                            "aws:SourceArn": f"arn:aws:qbusiness:{region}:{account_id}:application/*"
                         }
                     }
                 }

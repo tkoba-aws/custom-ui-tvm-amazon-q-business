@@ -17,7 +17,9 @@ export const GlobalConfigProvider = ({ children }) => {
   const [showInlineCitation, seShowInlineCitation] = useState(true);
 
   const updateConfig = (newConfig) => {
-    setIssuer(newConfig.issuer || issuer);
+    const issuerUrl = newConfig.issuer || issuer;
+    const cleanIssuer = issuerUrl.endsWith('/') ? issuerUrl.slice(0, -1) : issuerUrl;
+    setIssuer(cleanIssuer);
     setEmail(newConfig.email || email);
     setQBusinessAppId(newConfig.qBusinessAppId || qBusinessAppId);
     setAwsRegion(newConfig.awsRegion || awsRegion);
