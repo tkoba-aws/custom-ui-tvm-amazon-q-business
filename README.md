@@ -4,7 +4,7 @@
 > This solution requires using Amazon Q Business with [IAM Identity Provider](https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/create-application-iam.html), and does not support IAM Identity Center (IDC) based authentication setup. For calling Amazon Q Business APIs while using IDC, check [this GitHub repository](https://github.com/aws-samples/custom-web-experience-with-amazon-q-business).
 
 > [!CAUTION]
-> 🛑 STOP: Have you read the [Wiki](https://github.com/aws-samples/custom-ui-tvm-amazon-q-business/wiki)? We highly recommend reading through the Wiki first before deploying.
+> 🛑 STOP: Have you [read the Wiki](https://github.com/aws-samples/custom-ui-tvm-amazon-q-business/wiki) ? We highly recommend reading through the Wiki first before deploying.
 
 Deploy a fully customizable Amazon Q Business AI Assistant experience
 
