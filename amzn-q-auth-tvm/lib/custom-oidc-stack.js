@@ -16,8 +16,8 @@ class MyOidcIssuerStack extends Stack {
     const accountId = this.account;
     const keyId = `${region}-kid`;
 
-    // Generate a random audience (11 characters long)
-    const audience = randomBytes(6).toString('hex');
+    // Generate a deterministic Audience for the OIDC issuer
+    const audience = `${this.region}-${this.account}-tvm`;
 
     //Create allow-listed domains parameters in SSM
     new ssm.StringParameter(this, 'OIDCAllowListParameter', {
