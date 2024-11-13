@@ -1,8 +1,0 @@
-{
-  "MyOidcIssuerStack": {
-    "AudienceOutput": "f453c9126645",
-    "IssuerUrlOutput": "https://7dnpcp3e84.execute-api.us-east-1.amazonaws.com/prod/",
-    "QBizAssumeRoleARN": "arn:aws:iam::965425568475:role/q-biz-custom-oidc-assume-role",
-    "OidcApiEndpoint4C31BB7B": "https://7dnpcp3e84.execute-api.us-east-1.amazonaws.com/prod/"
-  }
-}
