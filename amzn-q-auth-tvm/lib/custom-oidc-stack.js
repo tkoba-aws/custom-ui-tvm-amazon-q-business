@@ -227,15 +227,19 @@ class MyOidcIssuerStack extends Stack {
     });
 
     // Create the IAM Role
+    const audienceCondition = new cdk.CfnJson(this, 'AudienceCondition', {
+      value: {
+        [`${this.issuer_url.replace('https://', '')}:aud`]: audience
+      }
+    });
+
     const qbizIAMRole = new iam.Role(this, 'QBusinessOIDCRole', {
       roleName: 'q-biz-custom-oidc-assume-role',
       description: 'Role for OIDC-based authentication in q-business.',
       assumedBy: new iam.CompositePrincipal(
         // OIDC Provider trust
         new iam.OpenIdConnectPrincipal(oidcIAMProvider, {
-          StringEquals: {
-            [`${this.issuer_url.replace('https://', '')}:aud`]: audience
-          },
+          StringEquals: audienceCondition,
           StringLike: {
             'aws:RequestTag/Email': '*'
           }
