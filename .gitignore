@@ -2,6 +2,7 @@ oidcenv
 oidcenv/*
 node_modules
 test.ipynb
+__pycache__
 
 # CDK asset staging directory
 .cdk.staging
