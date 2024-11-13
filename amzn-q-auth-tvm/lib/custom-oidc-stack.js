@@ -197,27 +197,113 @@ class MyOidcIssuerStack extends Stack {
       resources: [`arn:aws:iam::${accountId}:role/*`]  // Allow creating and managing IAM roles in this account
     }));
 
-    const updateLambda = new lambda.Function(this, 'UpdateLambdaEnv', {
-      functionName: 'oidc-lambda-updater',
-      code: lambda.Code.fromAsset('lambdas/update-lambda'),  // Path to your update Lambda code
-      handler: 'app.lambda_handler',
-      runtime: lambda.Runtime.PYTHON_3_11,
-      environment: {
-        FUNCTION_NAME: oidcLambda.functionName,  // Pass the OIDC Lambda function name
-        API_URL: api.url,  // Pass the API Gateway URL
-        AUDIENCE: audience  // Pass the audience
-      },
-      timeout: Duration.seconds(300),
-      role: updateLambdaRole,  // Ensure this Lambda has permission to update the function
-    });
+    // const updateLambda = new lambda.Function(this, 'UpdateLambdaEnv', {
+    //   functionName: 'oidc-lambda-updater',
+    //   code: lambda.Code.fromAsset('lambdas/update-lambda'),
+    //   handler: 'app.lambda_handler',
+    //   runtime: lambda.Runtime.PYTHON_3_11,
+    //   environment: {
+    //     FUNCTION_NAME: oidcLambda.functionName,
+    //     API_URL: api.url,
+    //     AUDIENCE: audience
+    //   },
+    //   timeout: Duration.seconds(300),
+    //   role: updateLambdaRole,
+    // });
     
-    const updateLambdaProvider = new custom_resources.Provider(this, 'UpdateLambdaProvider', {
-      onEventHandler: updateLambda,
+    // const updateLambdaProvider = new custom_resources.Provider(this, 'UpdateLambdaProvider', {
+    //   onEventHandler: updateLambda,
+    // });
+
+    // new cdk.CustomResource(this, 'UpdateLambdaCustomResource', {
+    //   serviceToken: updateLambdaProvider.serviceToken,
+    // });
+
+    this.issuer_url = api.url.rstrip('/');
+
+    const oidcIAMProvider = new iam.OpenIdConnectProvider(this, 'OIDCIAMProvider', {
+      url: this.issuer_url,
+      clientIds: [audience]
     });
-    
-    new cdk.CustomResource(this, 'UpdateLambdaCustomResource', {
-      serviceToken: updateLambdaProvider.serviceToken,
+
+    // Create the IAM Role
+    const qbizIAMRole = new iam.Role(this, 'QBusinessOIDCRole', {
+      roleName: 'q-biz-custom-oidc-assume-role',
+      description: 'Role for OIDC-based authentication in q-business.',
+      assumedBy: new iam.CompositePrincipal(
+        // OIDC Provider trust
+        new iam.OpenIdConnectPrincipal(oidcIAMProvider, {
+          StringEquals: {
+            [`${this.issuer_url.replace('https://', '')}:aud`]: audience
+          },
+          StringLike: {
+            'aws:RequestTag/Email': '*'
+          }
+        }).withConditions({
+          StringLike: {
+            'aws:RequestTag/Email': '*'
+          }
+        }),
+        // Q Business service trust
+        new iam.ServicePrincipal('application.qbusiness.amazonaws.com')
+          .withConditions({
+            StringEquals: {
+              'aws:SourceAccount': this.account
+            },
+            ArnEquals: {
+              'aws:SourceArn': `arn:aws:qbusiness:${this.region}:${this.account}:application/*`
+            }
+          })
+      )
     });
+
+
+    // Add inline policy for permissions
+    qbizIAMRole.attachInlinePolicy(new iam.Policy(this, 'QBusinessPermissions', {
+      statements: [
+        new iam.PolicyStatement({
+          sid: 'QBusinessConversationPermission',
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'qbusiness:Chat',
+            'qbusiness:ChatSync',
+            'qbusiness:ListMessages',
+            'qbusiness:ListConversations',
+            'qbusiness:PutFeedback',
+            'qbusiness:DeleteConversation'
+          ],
+          resources: [`arn:aws:qbusiness:us-east-1:${this.account}:application/*`]
+        }),
+        new iam.PolicyStatement({
+          sid: 'QBusinessSetContextPermissions',
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:SetContext'],
+          resources: ['arn:aws:sts::*:self'],
+          conditions: {
+            StringLike: {
+              'aws:CalledViaLast': ['qbusiness.amazonaws.com']
+            }
+          }
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['user-subscriptions:CreateClaim'],
+          resources: ['*']
+        })
+      ]
+    }));
+
+    // Add permissions for TagSession
+    qbizIAMRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['sts:TagSession'],
+      resources: ['*'],
+      conditions: {
+        StringLike: {
+          'aws:RequestTag/Email': '*'
+        }
+      }
+    }));
 
     // Output Audience Id
     new cdk.CfnOutput(this, 'AudienceOutput', {
@@ -236,7 +322,7 @@ class MyOidcIssuerStack extends Stack {
     //Output Q Business Role to Assume q-biz-custom-oidc-assume-role
     new cdk.CfnOutput(this, 'QBizAssumeRoleARN', {
       description: 'Amazon Q Business Role to Assume',
-      value: `arn:aws:iam::${accountId}:role/q-biz-custom-oidc-assume-role`,
+      value: qbizIAMRole.roleArn,//`arn:aws:iam::${accountId}:role/q-biz-custom-oidc-assume-role`,
       exportName: 'AssumeRoleARN',
     });
   }

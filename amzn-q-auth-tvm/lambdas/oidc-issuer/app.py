@@ -17,7 +17,6 @@ PRIVATE_KEY_PARAM = os.getenv('PRIVATE_KEY_PARAM')
 PUBLIC_KEY_PARAM = os.getenv('PUBLIC_KEY_PARAM')
 KID = os.getenv('KID')
 REGION = os.getenv('REGION')
-ISSUER_URL = os.getenv('ISSUER_URL')
 AUDIENCE = os.getenv('AUDIENCE')
 
 ssm_client = boto3.client('ssm')
@@ -53,6 +52,10 @@ def handle_token(event):
         body = json.loads(event['body'])
         email = body.get('email')
 
+        domain = event['requestContext']['domainName']
+        stage = event['requestContext']['stage']
+        issuer_url = f"https://{domain}/{stage}"
+
         if not email:
             return {
                 'statusCode': 400,
@@ -65,7 +68,7 @@ def handle_token(event):
         claims = {
             "sub": email,
             "aud": AUDIENCE,
-            "iss": ISSUER_URL,  # Use the dynamic API Gateway URL as the issuer
+            "iss": issuer_url,
             "iat": datetime.datetime.now(datetime.timezone.utc),
             "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1),
             "email": email,
@@ -103,9 +106,13 @@ def handle_token(event):
         }
 
 def handle_openid_configuration(event):
+    domain = event['requestContext']['domainName']
+    stage = event['requestContext']['stage']
+    issuer_url = f"https://{domain}/{stage}"
+
     openid_config = {
-        "issuer": ISSUER_URL,  # Dynamic issuer
-        "jwks_uri": f"{ISSUER_URL}/.well-known/jwks.json",  # JWKS URI
+        "issuer": issuer_url,  # Dynamic issuer
+        "jwks_uri": f"{issuer_url}/.well-known/jwks.json",  # JWKS URI
         "response_types_supported": ["id_token"],
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"]
