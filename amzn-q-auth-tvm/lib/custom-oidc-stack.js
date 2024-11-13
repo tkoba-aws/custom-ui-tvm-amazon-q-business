@@ -28,7 +28,7 @@ class MyOidcIssuerStack extends Stack {
 
     // IAM Role for Key Generation Lambda
     const keyGenLambdaRole = new iam.Role(this, 'KeyGenLambdaRole', {
-      roleName: 'KeyGenLambdaRole',
+      roleName: 'tvm-key-gen-lambda-role',
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
@@ -46,7 +46,7 @@ class MyOidcIssuerStack extends Stack {
 
     // IAM Role for OIDC Lambda
     const oidcLambdaRole = new iam.Role(this, 'OidcLambdaRole', {
-      roleName: 'OidcLambdaRole',
+      roleName: 'tvm-oidc-lambda-role',
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
@@ -67,7 +67,7 @@ class MyOidcIssuerStack extends Stack {
 
     // Lambda to generate RSA key pair and store in SSM
     const keyGenLambda = new lambda.DockerImageFunction(this, 'KeyGenLambda', {
-      functionName: 'key-gen-lambda',
+      functionName: 'tvm-key-gen-lambda',
       code: lambda.DockerImageCode.fromImageAsset('lambdas/key-gen'),
       handler: 'app.lambda_handler',
       runtime: lambda.Runtime.PYTHON_3_11,
@@ -85,7 +85,7 @@ class MyOidcIssuerStack extends Stack {
 
     // Lambda Authorizer function for API Gateway
     const authorizerLambda = new lambda.Function(this, 'OIDCLambdaAuthorizerFn', {
-      functionName: 'oidc-lambda-authorizer',
+      functionName: 'tvm-oidc-lambda-authorizer',
       code: lambda.Code.fromAsset('lambdas/lambda-authorizer'),
       handler: 'app.lambda_handler',
       environment: {        
@@ -119,7 +119,7 @@ class MyOidcIssuerStack extends Stack {
     });
 
     const oidcLambda = new lambda.DockerImageFunction(this, 'OidcLambda', {
-      functionName: 'oidc-lambda',
+      functionName: 'tvm-oidc-lambda',
       code: lambda.DockerImageCode.fromImageAsset('lambdas/oidc-issuer'),
       environment: {
         PRIVATE_KEY_PARAM: '/oidc/private_key',
@@ -153,81 +153,16 @@ class MyOidcIssuerStack extends Stack {
     const jwksResource = wellknown.addResource('jwks.json');
     jwksResource.addMethod('GET', new apigateway.LambdaIntegration(oidcLambda));
 
-    // Define the IAM role for the Custom Resource Lambda (update-lambda)
-    const updateLambdaRole = new iam.Role(this, 'UpdateLambdaRole', {
-      roleName: 'update-oidc-lambda-role',
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),  // The Lambda service
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),  // CloudWatch logs
-      ],
-    });
-
-    // Grant permission to update the OIDC Lambda function environment variables
-    updateLambdaRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'lambda:GetFunctionConfiguration',
-        'lambda:UpdateFunctionConfiguration'
-      ],
-      resources: [oidcLambda.functionArn]  // The OIDC Lambda's ARN
-    }));
-
-    // Grant permissions to create and manage IAM Identity Providers
-    updateLambdaRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'iam:CreateOpenIDConnectProvider',
-        'iam:DeleteOpenIDConnectProvider',
-        'iam:GetOpenIDConnectProvider'
-      ],
-      resources: [`arn:aws:iam::${accountId}:oidc-provider/*`]
-    }));
-
-    // Grant permissions to create and manage IAM Roles
-    updateLambdaRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'iam:CreateRole',
-        'iam:DeleteRole',
-        'iam:DeleteRolePolicy',
-        'iam:GetRole',
-        'iam:PutRolePolicy',
-        'iam:AttachRolePolicy'
-      ],
-      resources: [`arn:aws:iam::${accountId}:role/*`]  // Allow creating and managing IAM roles in this account
-    }));
-
-    // const updateLambda = new lambda.Function(this, 'UpdateLambdaEnv', {
-    //   functionName: 'oidc-lambda-updater',
-    //   code: lambda.Code.fromAsset('lambdas/update-lambda'),
-    //   handler: 'app.lambda_handler',
-    //   runtime: lambda.Runtime.PYTHON_3_11,
-    //   environment: {
-    //     FUNCTION_NAME: oidcLambda.functionName,
-    //     API_URL: api.url,
-    //     AUDIENCE: audience
-    //   },
-    //   timeout: Duration.seconds(300),
-    //   role: updateLambdaRole,
-    // });
-    
-    // const updateLambdaProvider = new custom_resources.Provider(this, 'UpdateLambdaProvider', {
-    //   onEventHandler: updateLambda,
-    // });
-
-    // new cdk.CustomResource(this, 'UpdateLambdaCustomResource', {
-    //   serviceToken: updateLambdaProvider.serviceToken,
-    // });
-
     const issuerDomain = `${api.restApiId}.execute-api.${this.region}.${this.urlSuffix}`;
     const stage = api.deploymentStage.stageName;
     
+    // Create an OIDC IAM Identity Provider
     const oidcIAMProvider = new iam.OpenIdConnectProvider(this, 'OIDCIAMProvider', {
       url: `https://${issuerDomain}/${stage}`,
       clientIds: [audience]
     });
 
-    // Create the IAM Role
+    // Create the IAM Role to Assume
     const audienceCondition = new cdk.CfnJson(this, 'AudienceCondition', {
       value: {
         [`${issuerDomain}/${stage}:aud`]: audience
@@ -235,8 +170,8 @@ class MyOidcIssuerStack extends Stack {
     });
 
     const qbizIAMRole = new iam.Role(this, 'QBusinessOIDCRole', {
-      roleName: 'q-biz-custom-oidc-assume-role',
-      description: 'Role for OIDC-based authentication in q-business.',
+      roleName: 'tvm-qbiz-custom-oidc-role',
+      description: 'Role for TVM OIDC-based authentication in Amazon Q Business.',
       assumedBy: new iam.CompositePrincipal(
         // First statement for AssumeRoleWithWebIdentity
         new iam.FederatedPrincipal(
@@ -308,18 +243,6 @@ class MyOidcIssuerStack extends Stack {
       ]
     }));
 
-    // Add permissions for TagSession
-    qbizIAMRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['sts:TagSession'],
-      resources: ['*'],
-      conditions: {
-        StringLike: {
-          'aws:RequestTag/Email': '*'
-        }
-      }
-    }));
-
     // Output Audience Id
     new cdk.CfnOutput(this, 'AudienceOutput', {
       description: 'OIDC Audience ID',
@@ -337,7 +260,7 @@ class MyOidcIssuerStack extends Stack {
     // Output Q Business Role to Assume q-biz-custom-oidc-assume-role
     new cdk.CfnOutput(this, 'QBizAssumeRoleARN', {
       description: 'Amazon Q Business Role to Assume',
-      value: qbizIAMRole.roleArn,//`arn:aws:iam::${accountId}:role/q-biz-custom-oidc-assume-role`,
+      value: qbizIAMRole.roleArn,
       exportName: 'AssumeRoleARN',
     });
   }
