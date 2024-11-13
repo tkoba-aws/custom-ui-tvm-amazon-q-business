@@ -238,17 +238,27 @@ class MyOidcIssuerStack extends Stack {
       roleName: 'q-biz-custom-oidc-assume-role',
       description: 'Role for OIDC-based authentication in q-business.',
       assumedBy: new iam.CompositePrincipal(
-        // OIDC Provider trust
-        new iam.OpenIdConnectPrincipal(oidcIAMProvider, {
-          StringEquals: audienceCondition,
-          StringLike: {
-            'aws:RequestTag/Email': '*'
-          }
-        }).withConditions({
-          StringLike: {
-            'aws:RequestTag/Email': '*'
-          }
-        }),
+        // First statement for AssumeRoleWithWebIdentity
+        new iam.FederatedPrincipal(
+          oidcIAMProvider.openIdConnectProviderArn,
+          {
+            StringEquals: audienceCondition,
+            StringLike: {
+              'aws:RequestTag/Email': '*'
+            }
+          },
+          'sts:AssumeRoleWithWebIdentity'
+        ),
+        // Second statement for TagSession
+        new iam.FederatedPrincipal(
+          oidcIAMProvider.openIdConnectProviderArn,
+          {
+            StringLike: {
+              'aws:RequestTag/Email': '*'
+            }
+          },
+          'sts:TagSession'
+        ),
         // Q Business service trust
         new iam.ServicePrincipal('application.qbusiness.amazonaws.com')
           .withConditions({
@@ -324,7 +334,7 @@ class MyOidcIssuerStack extends Stack {
       exportName: 'IssuerUrl',
     });
 
-    //Output Q Business Role to Assume q-biz-custom-oidc-assume-role
+    // Output Q Business Role to Assume q-biz-custom-oidc-assume-role
     new cdk.CfnOutput(this, 'QBizAssumeRoleARN', {
       description: 'Amazon Q Business Role to Assume',
       value: qbizIAMRole.roleArn,//`arn:aws:iam::${accountId}:role/q-biz-custom-oidc-assume-role`,
