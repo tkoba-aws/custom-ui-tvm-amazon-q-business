@@ -189,6 +189,7 @@ class MyOidcIssuerStack extends Stack {
       actions: [
         'iam:CreateRole',
         'iam:DeleteRole',
+        'iam:DeleteRolePolicy',
         'iam:GetRole',
         'iam:PutRolePolicy',
         'iam:AttachRolePolicy'
