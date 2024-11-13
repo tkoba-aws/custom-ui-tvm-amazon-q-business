@@ -5,10 +5,9 @@ const apigateway = require('aws-cdk-lib/aws-apigateway');
 const ssm = require('aws-cdk-lib/aws-ssm');
 const iam = require('aws-cdk-lib/aws-iam');
 const custom_resources = require('aws-cdk-lib/custom-resources');
-const { randomBytes } = require('crypto');
 const allowListedDomains = require("../allow-list-domains.json");
 
-class MyOidcIssuerStack extends Stack {
+class TVMOidcIssuerStack extends Stack {
   constructor(scope, id, props) {
     super(scope, id, props);
 
@@ -266,4 +265,4 @@ class MyOidcIssuerStack extends Stack {
   }
 }
 
-module.exports = { MyOidcIssuerStack };
+module.exports = { TVMOidcIssuerStack };

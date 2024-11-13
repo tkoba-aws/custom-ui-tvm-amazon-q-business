@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 require('dotenv').config()
 const cdk = require('aws-cdk-lib');
-const { MyOidcIssuerStack } = require('../lib/custom-oidc-stack');
+const { TVMOidcIssuerStack } = require('../lib/custom-oidc-stack');
 const { AwsSolutionsChecks, NagSuppressions } = require('cdk-nag')
 
 const app = new cdk.App();
-const stack = new MyOidcIssuerStack(app, 'MyOidcIssuerStack', {
+const stack = new TVMOidcIssuerStack(app, 'TVMOidcIssuerStack', {
   env: { 
     account: process.env.CDK_DEFAULT_ACCOUNT, 
     region: process.env.CDK_DEFAULT_REGION 
