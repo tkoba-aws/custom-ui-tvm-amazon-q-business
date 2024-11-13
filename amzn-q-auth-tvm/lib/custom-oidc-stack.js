@@ -219,7 +219,7 @@ class MyOidcIssuerStack extends Stack {
     //   serviceToken: updateLambdaProvider.serviceToken,
     // });
 
-    this.issuer_url = api.url.rstrip('/');
+    this.issuer_url = api.url.endsWith('/') ? api.url.slice(0, -1) : api.url;
 
     const oidcIAMProvider = new iam.OpenIdConnectProvider(this, 'OIDCIAMProvider', {
       url: this.issuer_url,
