@@ -105,10 +105,12 @@ def lambda_handler(event, context):
             ssm_client.delete_parameters(
                     Names=[
                         '/oidc/public_key',
-                        '/oidc/private_key'
+                        '/oidc/private_key',
+                        '/oidc/client_id',
+                        '/oidc/client_secret'
                     ]
                 )
-            logger.info('RSA key pair successfully deleted from SSM.')
+            logger.info('RSA key pair, client ID, and secret successfully deleted from SSM.')
         except Exception as e:
             return {
                 'statusCode': 500,
