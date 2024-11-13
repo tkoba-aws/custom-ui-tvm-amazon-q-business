@@ -219,17 +219,18 @@ class MyOidcIssuerStack extends Stack {
     //   serviceToken: updateLambdaProvider.serviceToken,
     // });
 
-    this.issuer_url = api.url.endsWith('/') ? api.url.slice(0, -1) : api.url;
-
+    const issuerDomain = `${api.restApiId}.execute-api.${this.region}.${this.urlSuffix}`;
+    const stage = api.deploymentStage.stageName;
+    
     const oidcIAMProvider = new iam.OpenIdConnectProvider(this, 'OIDCIAMProvider', {
-      url: this.issuer_url,
+      url: `https://${issuerDomain}/${stage}`,
       clientIds: [audience]
     });
 
     // Create the IAM Role
     const audienceCondition = new cdk.CfnJson(this, 'AudienceCondition', {
       value: {
-        [`${this.issuer_url.replace('https://', '')}:aud`]: audience
+        [`${issuerDomain}/${stage}:aud`]: audience
       }
     });
 
