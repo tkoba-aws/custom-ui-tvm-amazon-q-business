@@ -243,6 +243,9 @@ class TVMOidcIssuerStack extends Stack {
       ]
     }));
 
+    /**
+     * Deploy if set to 'true'
+     */
     if(props.deployQbiz){
       const dataSourceRole = new iam.Role(this, 'QBusinessDataSourceRole', {
         roleName: 'tvm-qbiz-data-source-role',

@@ -187,7 +187,7 @@ def lambda_handler(event, context):
                   "additionalProperties": {
                     "rateLimit": "300",
                     "maxFileSize": "50",
-                    "crawlDepth": "2",
+                    "crawlDepth": "4",
                     "maxLinksPerUrl": "100",
                     "crawlSubDomain": "true",
                     "crawlAllDomain": "true",

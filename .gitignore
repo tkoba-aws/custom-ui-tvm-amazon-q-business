@@ -10,6 +10,8 @@ qbusiness
 qbusiness/*
 custom_service
 custom_service/*
+sample_tickets
+sample_tickets/*
 
 # CDK asset staging directory
 .cdk.staging
