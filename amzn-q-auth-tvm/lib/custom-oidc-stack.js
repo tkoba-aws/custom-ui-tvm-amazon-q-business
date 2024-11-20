@@ -6,6 +6,7 @@ const ssm = require('aws-cdk-lib/aws-ssm');
 const iam = require('aws-cdk-lib/aws-iam');
 const custom_resources = require('aws-cdk-lib/custom-resources');
 const allowListedDomains = require("../allow-list-domains.json");
+require('dotenv').config()
 
 class TVMOidcIssuerStack extends Stack {
   constructor(scope, id, props) {
@@ -241,6 +242,122 @@ class TVMOidcIssuerStack extends Stack {
         })
       ]
     }));
+
+    if(props.deployQbiz){
+      const dataSourceRole = new iam.Role(this, 'QBusinessDataSourceRole', {
+        roleName: 'tvm-qbiz-data-source-role',
+        description: 'Role required for Amazon Q Business data sources.',
+        assumedBy: new iam.ServicePrincipal('application.qbusiness.amazonaws.com')
+        .withConditions({
+          StringEquals: {
+            'aws:SourceAccount': this.account
+          },
+          ArnEquals: {
+            'aws:SourceArn': `arn:aws:qbusiness:${this.region}:${this.account}:application/*`
+          }
+        })
+      });
+
+      dataSourceRole.attachInlinePolicy(new iam.Policy(this, 'QBizDataSourcePermissions',{
+        statements: [
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToGetObjectfromS3',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              's3:GetObject'
+            ],
+            resources: [`arn:aws:s3:::${process.env.S3_DATA_SOURCE_BUCKET}/*`],
+            conditions: {
+              StringEquals: {
+                'aws:ResourceAccount': this.account
+              }
+            }
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToListS3Buckets',
+            effect: iam.Effect.ALLOW,
+            actions: ['s3:ListBucket'],
+            resources: [`arn:aws:s3:::${process.env.S3_DATA_SOURCE_BUCKET}`],
+            conditions: {
+              StringEquals: {
+                'aws:ResourceAccount': this.account
+              }
+            }
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToIngestDocuments',
+            effect: iam.Effect.ALLOW,
+            actions: ['qbusiness:BatchPutDocument', 'qbusiness:BatchDeleteDocument'],
+            resources: ['*']
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToCallPrincipalMappingAPIs',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'qbusiness:PutGroup',
+              'qbusiness:CreateUser',
+              'qbusiness:DeleteGroup',
+              'qbusiness:UpdateUser',
+              'qbusiness:ListGroups'
+            ],
+            resources: ['*']
+          })
+        ]
+      }));
+
+      const qBizLambdaRole = new iam.Role(this, 'QBizLambdaRole', {
+        roleName: 'tvm-q-biz-lambda-role',
+        assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
+        ]
+      });
+
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'qbusiness:CreateApplication', 
+          'qbusiness:CreateIndex', 
+          'qbusiness:CreateDataSource',
+          'qbusiness:StartDataSourceSyncJob',
+          ],
+        resources: ["*"]
+      }));
+
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'iam:PassRole'
+          ],
+        resources: [dataSourceRole.roleArn]
+      }));
+
+      const qBizCreationLambda = new lambda.DockerImageFunction(this, 'QBizCreationLambda', {
+        functionName: 'tvm-q-biz-creation-lambda',
+        code: lambda.DockerImageCode.fromImageAsset('lambdas/q-biz'),
+        handler: 'app.lambda_handler',
+        runtime: lambda.Runtime.PYTHON_3_10,
+        timeout: Duration.minutes(15),
+        role: qBizLambdaRole,
+        environment: {
+          DATA_SOURCE_ROLE: dataSourceRole.roleArn,
+          Q_BIZ_APP_NAME: process.env.Q_BIZ_APP_NAME,
+          IAM_PROVIDER_ARN: oidcIAMProvider.openIdConnectProviderArn,
+          IAM_PROVIDER_AUDIENCE: audience,
+          Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
+          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS
+        }
+      });
+
+      const qBizAppProvider = new custom_resources.Provider(this, 'QBizAppProvider', {
+        onEventHandler: qBizCreationLambda,
+      });
+  
+      new cdk.CustomResource(this, 'QBizAppCustomResource', {
+        serviceToken: qBizAppProvider.serviceToken,
+      });
+
+    }
 
     // Output Audience Id
     new cdk.CfnOutput(this, 'AudienceOutput', {

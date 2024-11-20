@@ -5,6 +5,7 @@ import json
 import boto3
 import os
 import uuid
+import cfnresponse
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend

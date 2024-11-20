@@ -1,8 +1,15 @@
 oidcenv
 oidcenv/*
+oidcenv2
+oidcenv2/*
 node_modules
 test.ipynb
 __pycache__
+service-2.json
+qbusiness
+qbusiness/*
+custom_service
+custom_service/*
 
 # CDK asset staging directory
 .cdk.staging

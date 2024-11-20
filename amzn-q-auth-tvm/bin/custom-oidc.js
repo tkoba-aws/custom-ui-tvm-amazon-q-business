@@ -10,6 +10,7 @@ const stack = new TVMOidcIssuerStack(app, 'TVMOidcIssuerStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT, 
     region: process.env.CDK_DEFAULT_REGION 
   },
+  deployQbiz: process.env.CDK_DEPLOY_Q_BIZ_APP === 'true'
 });
 
 cdk.Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
