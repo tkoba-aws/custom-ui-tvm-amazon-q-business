@@ -67,28 +67,28 @@ def lambda_handler(event, context):
                 Overwrite=True
             )
             
-            account_id = sts.get_caller_identity()['Account']
-            client_id = f"oidc-tvm-{account_id}"
-            client_secret = uuid.uuid4().hex
-            # Store the client id in SSM Parameter Store (encrypted)
-            logger.info("Storing client ID into SSM Parameter store...")
-            ssm_client.put_parameter(
-                Name='/oidc/client_id',
-                Value=client_id,
-                Type='String',
-                Overwrite=True
-            )
+            # account_id = sts.get_caller_identity()['Account']
+            # client_id = f"oidc-tvm-{account_id}"
+            # client_secret = uuid.uuid4().hex
+            # # Store the client id in SSM Parameter Store (encrypted)
+            # logger.info("Storing client ID into SSM Parameter store...")
+            # ssm_client.put_parameter(
+            #     Name='/oidc/client_id',
+            #     Value=client_id,
+            #     Type='String',
+            #     Overwrite=True
+            # )
 
-            # Store the client secret in SSM Parameter Store (encrypted)
-            logger.info("Storing client secret into SSM Parameter store...")
-            ssm_client.put_parameter(
-                Name='/oidc/client_secret',
-                Value=client_secret,
-                Type='SecureString',
-                Overwrite=True
-            )
+            # # Store the client secret in SSM Parameter Store (encrypted)
+            # logger.info("Storing client secret into SSM Parameter store...")
+            # ssm_client.put_parameter(
+            #     Name='/oidc/client_secret',
+            #     Value=client_secret,
+            #     Type='SecureString',
+            #     Overwrite=True
+            # )
 
-            logger.info('RSA key pair, client ID, and client secret successfully generated and stored in SSM.')
+            logger.info('RSA key pair successfully generated and stored in SSM.')
             return {
                 'statusCode': 200,
                 'body': json.dumps('RSA key pair successfully generated and stored in SSM.')

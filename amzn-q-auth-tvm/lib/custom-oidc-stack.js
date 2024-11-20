@@ -6,6 +6,7 @@ const ssm = require('aws-cdk-lib/aws-ssm');
 const iam = require('aws-cdk-lib/aws-iam');
 const custom_resources = require('aws-cdk-lib/custom-resources');
 const allowListedDomains = require("../allow-list-domains.json");
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config()
 
 class TVMOidcIssuerStack extends Stack {
@@ -15,6 +16,7 @@ class TVMOidcIssuerStack extends Stack {
     const region = this.region;
     const accountId = this.account;
     const keyId = `${region}-kid`;
+    const secretID = uuidv4().replace(/-/g, '');
 
     // Generate a deterministic Audience for the OIDC issuer
     const audience = `${this.region}-${this.account}-tvm`;
@@ -24,6 +26,20 @@ class TVMOidcIssuerStack extends Stack {
       parameterName: '/oidc/allow-list',
       stringValue: allowListedDomains.allowList.join(','),
       description: 'The Allow listed domains for TVM OIDC Provider'
+    });
+
+    //Client ID
+    new ssm.StringParameter(this, 'OIDCClientId', {
+      parameterName: '/oidc/client_id',
+      stringValue: `oidc-tvm-${this.account}`,
+      description: 'The Client ID for TVM provider'
+    });
+
+    //Client Secret
+    new ssm.StringParameter(this, 'OIDCClientSecret', {
+      parameterName: '/oidc/client_secret',
+      stringValue: secretID,
+      description: 'The Client ID for TVM provider'
     });
 
     // IAM Role for Key Generation Lambda
@@ -247,6 +263,7 @@ class TVMOidcIssuerStack extends Stack {
      * Deploy if set to 'true'
      */
     if(props.deployQbiz){
+      // Creates a role for the data sources
       const dataSourceRole = new iam.Role(this, 'QBusinessDataSourceRole', {
         roleName: 'tvm-qbiz-data-source-role',
         description: 'Role required for Amazon Q Business data sources.',
@@ -308,6 +325,7 @@ class TVMOidcIssuerStack extends Stack {
         ]
       }));
 
+      //Creates a role for the external resource lambda that creates the Q Business Application
       const qBizLambdaRole = new iam.Role(this, 'QBizLambdaRole', {
         roleName: 'tvm-q-biz-lambda-role',
         assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -381,6 +399,20 @@ class TVMOidcIssuerStack extends Stack {
       description: 'Amazon Q Business Role to Assume',
       value: qbizIAMRole.roleArn,
       exportName: 'AssumeRoleARN',
+    });
+
+    // Output Client ID
+    new cdk.CfnOutput(this, 'QbizTVMClientID', {
+      description: 'The TVM Client ID',
+      value: `oidc-tvm-${this.account}`,
+      exportName: 'TVMClientID',
+    });
+
+    // Output Client secret
+    new cdk.CfnOutput(this, 'QbizTVMClientSecret', {
+      description: 'The TVM Client Secret',
+      value: secretID,
+      exportName: 'TVMClientSecret',
     });
   }
 }
