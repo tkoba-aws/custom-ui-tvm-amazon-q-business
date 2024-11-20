@@ -1,17 +1,12 @@
-import json
 import time      
 import logging
 import os
-import cfnresponse
-from botocore.exceptions import ClientError
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import sys
-sys.path.insert(0, '/opt/python/lib/python3.10/site-packages')
 import boto3
+import cfnresponse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 qbusiness_client = boto3.client('qbusiness') 
 logger = logging.getLogger(__name__)   
-
 
 def wait_for_all_data_sources(application_id, index_id, data_sources):          
   max_retries=25 
