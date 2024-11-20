@@ -82,6 +82,7 @@ def lambda_handler(event, context):
     ds_role_arn = os.environ.get('DATA_SOURCE_ROLE', '')
 
     response_data = {}
+    logger.info(f"Creating Q Business application with name {application_name}, datasources bucket {s3_bucket_name} and URLS {webcrawler_seed_urls}")
 
     try:
         if event['RequestType'] == 'Create':
@@ -90,7 +91,7 @@ def lambda_handler(event, context):
                 displayName=application_name,
                 identityType= 'AWS_IAM_IDP_OIDC',
                 iamIdentityProviderArn=iam_idp_provier_arn,
-                clientIdsForOIDC= iam_idp_client_ids,
+                clientIdsForOIDC=[iam_idp_client_ids],
                 attachmentsConfiguration={
                     'attachmentsControlMode': 'DISABLED'
                 },
