@@ -233,6 +233,9 @@ class TVMOidcIssuerStack extends Stack {
           actions: [
             'qbusiness:Chat',
             'qbusiness:ChatSync',
+            'qbusiness:Retrieve',
+            'qbusiness:SearchRelevantContent',
+            'qbusiness:GetRelevantContent',
             'qbusiness:ListMessages',
             'qbusiness:ListConversations',
             'qbusiness:PutFeedback',
