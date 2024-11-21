@@ -371,9 +371,7 @@ class TVMOidcIssuerStack extends Stack {
           Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
           Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS          
         }
-      });
-
-      qBizCreationLambda.node.addDependency(dataSourceRole);
+      });      
 
       const qBizAppProvider = new custom_resources.Provider(this, 'QBizAppProvider', {
         onEventHandler: qBizCreationLambda,
