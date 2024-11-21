@@ -360,6 +360,14 @@ class TVMOidcIssuerStack extends Stack {
         resources: [dataSourceRole.roleArn]
       }));
 
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'iam:CreateServiceLinkedRole'
+          ],
+        resources: ["*"]
+      }));
+
       const qBizCreationLambda = new lambda.DockerImageFunction(this, 'QBizCreationLambda', {
         functionName: 'tvm-q-biz-creation-lambda',
         code: lambda.DockerImageCode.fromImageAsset('lambdas/q-biz'),
