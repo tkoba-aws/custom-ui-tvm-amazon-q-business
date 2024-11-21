@@ -124,7 +124,7 @@ def lambda_handler(event, context):
             
             # Create Retriever
             retriever_response = qbusiness_client.create_retriever(
-                                        applicationId='string',
+                                        applicationId=application_id,
                                         type='NATIVE_INDEX',
                                         displayName='q-business-native-inex-retriever',
                                         configuration={
