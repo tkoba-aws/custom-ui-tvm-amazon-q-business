@@ -106,6 +106,14 @@ def lambda_handler(event, context):
             response_data['ApplicationId'] = application_id
             logger.info(f'Application created with ID: {application_id}')
 
+            logger.info(f'Turning on creator mode for application : {application_id}')
+            qbusiness_client.update_chat_controls_configuration(
+                          applicationId=application_id,
+                          creatorModeConfiguration={
+                              'creatorModeControl': 'ENABLED'
+                          }
+                      )
+
             #create index
             response_index = qbusiness_client.create_index(
                     applicationId=application_id,

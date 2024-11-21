@@ -347,7 +347,9 @@ class TVMOidcIssuerStack extends Stack {
           'qbusiness:StartDataSourceSyncJob',
           'qbusiness:GetIndex',
           'qbusiness:GetDataSource',
-          'qbusiness:DeleteApplication'
+          'qbusiness:DeleteApplication',
+          "qbusiness:GetChatControlsConfiguration",
+          "qbusiness:UpdateChatControlsConfiguration",
           ],
         resources: ["*"]
       }));
