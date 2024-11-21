@@ -121,6 +121,20 @@ def lambda_handler(event, context):
 
             if index_status == "TIMEOUT" or index_status == "FAILED":
               raise Exception(f"Index creation failed with status : {index_status}")
+            
+            # Create Retriever
+            retriever_response = qbusiness_client.create_retriever(
+                                        applicationId='string',
+                                        type='NATIVE_INDEX',
+                                        displayName='q-business-native-inex-retriever',
+                                        configuration={
+                                            'nativeIndexConfiguration': {
+                                                'indexId': index_id
+                                            }
+                                        }
+                                  )
+            logger.info(f"Successfully created retriever: {retriever_response['retrieverId']}")
+            response_data['RetrieverId'] = retriever_response['retrieverId']
 
             # Create S3 Data Source
             s3_data_source_config = {

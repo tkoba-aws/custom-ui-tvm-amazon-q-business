@@ -286,7 +286,7 @@ class TVMOidcIssuerStack extends Stack {
             actions: [
               's3:GetObject'
             ],
-            resources: [`arn:aws:s3:::${process.env.S3_DATA_SOURCE_BUCKET}/*`],
+            resources: [`arn:aws:s3:::${process.env.Q_BIZ_S3_SOURCE_BKT}/*`],
             conditions: {
               StringEquals: {
                 'aws:ResourceAccount': this.account
@@ -297,7 +297,7 @@ class TVMOidcIssuerStack extends Stack {
             sid: 'AllowsAmazonQToListS3Buckets',
             effect: iam.Effect.ALLOW,
             actions: ['s3:ListBucket'],
-            resources: [`arn:aws:s3:::${process.env.S3_DATA_SOURCE_BUCKET}`],
+            resources: [`arn:aws:s3:::${process.env.Q_BIZ_S3_SOURCE_BKT}`],
             conditions: {
               StringEquals: {
                 'aws:ResourceAccount': this.account
@@ -339,11 +339,12 @@ class TVMOidcIssuerStack extends Stack {
         actions: [
           'qbusiness:CreateApplication', 
           'qbusiness:CreateIndex', 
+          'qbusiness:CreateRetriever',
           'qbusiness:CreateDataSource',
           'qbusiness:StartDataSourceSyncJob',
           'qbusiness:GetIndex',
           'qbusiness:GetDataSource',
-          'qbusiness:DeleteApplication',
+          'qbusiness:DeleteApplication'
           ],
         resources: ["*"]
       }));
