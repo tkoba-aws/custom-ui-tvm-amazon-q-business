@@ -107,6 +107,7 @@ def lambda_handler(event, context):
             logger.info(f'Application created with ID: {application_id}')
 
             logger.info(f'Turning on creator mode for application : {application_id}')
+            # This ensures auto subscription
             qbusiness_client.update_chat_controls_configuration(
                           applicationId=application_id,
                           creatorModeConfiguration={
