@@ -6,7 +6,7 @@ const ssm = require('aws-cdk-lib/aws-ssm');
 const iam = require('aws-cdk-lib/aws-iam');
 const custom_resources = require('aws-cdk-lib/custom-resources');
 const allowListedDomains = require("../allow-list-domains.json");
-const { v4: uuidv4 } = require('uuid');
+const { randomBytes } = require('crypto');
 require('dotenv').config()
 
 class TVMOidcIssuerStack extends Stack {
@@ -16,7 +16,7 @@ class TVMOidcIssuerStack extends Stack {
     const region = this.region;
     const accountId = this.account;
     const keyId = `${region}-kid`;
-    const secretID = uuidv4().replace(/-/g, '');
+    const secretID = randomBytes(12).toString('hex');
 
     // Generate a deterministic Audience for the OIDC issuer
     const audience = `${this.region}-${this.account}-tvm`;
