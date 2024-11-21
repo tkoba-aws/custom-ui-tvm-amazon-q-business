@@ -8,9 +8,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 qbusiness_client = boto3.client('qbusiness') 
 logger = logging.getLogger(__name__)   
 
+MAX_RETRIES=25
+DELAY=25
+
 def wait_for_all_data_sources(application_id, index_id, data_sources):          
-  max_retries=25 
-  delay=15
+  max_retries=MAX_RETRIES 
+  delay=DELAY
 
   def wait_for_data_source(data_source_id):
     for attempt in range(max_retries):
@@ -50,8 +53,8 @@ def wait_for_all_data_sources(application_id, index_id, data_sources):
 
 
 def wait_for_index_completion(application_id, index_id):          
-  max_retries=25
-  delay=15
+  max_retries=MAX_RETRIES
+  delay=DELAY
   for attempt in range(max_retries):
       try:
           index_waiter = qbusiness_client.get_index(applicationId=application_id, indexId=index_id)
