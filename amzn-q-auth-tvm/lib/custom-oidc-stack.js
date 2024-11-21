@@ -341,6 +341,8 @@ class TVMOidcIssuerStack extends Stack {
           'qbusiness:CreateIndex', 
           'qbusiness:CreateDataSource',
           'qbusiness:StartDataSourceSyncJob',
+          'qbusiness:GetIndex',
+          'qbusiness:GetDataSource',
           ],
         resources: ["*"]
       }));
