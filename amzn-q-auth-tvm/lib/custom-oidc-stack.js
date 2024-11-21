@@ -370,7 +370,7 @@ class TVMOidcIssuerStack extends Stack {
           IAM_PROVIDER_ARN: oidcIAMProvider.openIdConnectProviderArn,
           IAM_PROVIDER_AUDIENCE: audience,
           Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
-          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS          
+          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS
         }
       });      
 
