@@ -267,7 +267,7 @@ class TVMOidcIssuerStack extends Stack {
       const dataSourceRole = new iam.Role(this, 'QBusinessDataSourceRole', {
         roleName: 'tvm-qbiz-data-source-role',
         description: 'Role required for Amazon Q Business data sources.',
-        assumedBy: new iam.ServicePrincipal('application.qbusiness.amazonaws.com')
+        assumedBy: new iam.ServicePrincipal('qbusiness.amazonaws.com')
         .withConditions({
           StringEquals: {
             'aws:SourceAccount': this.account
@@ -369,9 +369,11 @@ class TVMOidcIssuerStack extends Stack {
           IAM_PROVIDER_ARN: oidcIAMProvider.openIdConnectProviderArn,
           IAM_PROVIDER_AUDIENCE: audience,
           Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
-          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS
+          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS          
         }
       });
+
+      qBizCreationLambda.node.addDependency(dataSourceRole);
 
       const qBizAppProvider = new custom_resources.Provider(this, 'QBizAppProvider', {
         onEventHandler: qBizCreationLambda,
