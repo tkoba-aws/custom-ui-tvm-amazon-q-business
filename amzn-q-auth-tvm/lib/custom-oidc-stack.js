@@ -260,9 +260,6 @@ class TVMOidcIssuerStack extends Stack {
           actions: ['user-subscriptions:CreateClaim'],
           resources: ['*'],
           conditions: {
-            Boolean: {
-              "user-subscriptions:CreateForSelf": "true"
-            },
             StringEquals: {
               'aws:CalledViaLast': "qbusiness.amazonaws.com"
             }
