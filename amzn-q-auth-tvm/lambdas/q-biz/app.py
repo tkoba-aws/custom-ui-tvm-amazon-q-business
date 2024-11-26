@@ -115,16 +115,6 @@ def lambda_handler(event, context):
                           }
                       )
             
-            logger.info(f'Turning on auto subscription for application : {application_id}')
-            # Ensures auto subscription is turned on for OIDC users
-            qbusiness_client.update_application(
-                        applicationId=application_id,
-                        autoSubscriptionConfiguration={
-                            'autoSubscribe': 'ENABLED',
-                            'defaultSubscriptionType': 'Q_BUSINESS'
-                        }
-                    )
-            
             #create index
             response_index = qbusiness_client.create_index(
                     applicationId=application_id,
@@ -256,7 +246,17 @@ def lambda_handler(event, context):
                         indexId=index_id
                     )
                     logger.info(f"Started sync for: {ds_id}")
-                logger.info("Both Sync's initiated. Done...")                
+                logger.info("Both Sync's initiated. Done...")   
+
+                logger.info(f'Turning on auto subscription for application : {application_id}')
+                # Ensures auto subscription is turned on for OIDC users
+                qbusiness_client.update_application(
+                            applicationId=application_id,
+                            autoSubscriptionConfiguration={
+                                'autoSubscribe': 'ENABLED',
+                                'defaultSubscriptionType': 'Q_BUSINESS'
+                            }
+                        )             
             else:
                 raise Exception(f"One or more data sources failed or timed out: {final_statuses}")                
             
