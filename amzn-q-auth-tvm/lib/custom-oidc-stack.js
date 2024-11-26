@@ -234,8 +234,7 @@ class TVMOidcIssuerStack extends Stack {
             'qbusiness:Chat',
             'qbusiness:ChatSync',
             'qbusiness:Retrieve',
-            'qbusiness:SearchRelevantContent',
-            'qbusiness:GetRelevantContent',
+            'qbusiness:SearchRelevantContent',            
             'qbusiness:ListMessages',
             'qbusiness:ListConversations',
             'qbusiness:PutFeedback',
@@ -257,7 +256,15 @@ class TVMOidcIssuerStack extends Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['user-subscriptions:CreateClaim'],
-          resources: ['*']
+          resources: ['*'],
+          conditions: {
+            Boolean: {
+              "user-subscriptions:CreateForSelf": "true"
+            },
+            StringEquals: {
+              'aws:CalledViaLast': "qbusiness.amazonaws.com"
+            }
+          }
         })
       ]
     }));
@@ -341,6 +348,7 @@ class TVMOidcIssuerStack extends Stack {
         effect: iam.Effect.ALLOW,
         actions: [
           'qbusiness:CreateApplication', 
+          'qbusiness:UpdateApplication', 
           'qbusiness:CreateIndex', 
           'qbusiness:CreateRetriever',
           'qbusiness:CreateDataSource',
@@ -385,7 +393,7 @@ class TVMOidcIssuerStack extends Stack {
           Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
           Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS
         }
-      });      
+      });
 
       const qBizAppProvider = new custom_resources.Provider(this, 'QBizAppProvider', {
         onEventHandler: qBizCreationLambda,
