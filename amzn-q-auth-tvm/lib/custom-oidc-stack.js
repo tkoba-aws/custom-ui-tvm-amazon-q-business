@@ -6,6 +6,8 @@ const ssm = require('aws-cdk-lib/aws-ssm');
 const iam = require('aws-cdk-lib/aws-iam');
 const custom_resources = require('aws-cdk-lib/custom-resources');
 const allowListedDomains = require("../allow-list-domains.json");
+const { randomBytes } = require('crypto');
+require('dotenv').config()
 
 class TVMOidcIssuerStack extends Stack {
   constructor(scope, id, props) {
@@ -14,6 +16,7 @@ class TVMOidcIssuerStack extends Stack {
     const region = this.region;
     const accountId = this.account;
     const keyId = `${region}-kid`;
+    const secretID = randomBytes(12).toString('hex');
 
     // Generate a deterministic Audience for the OIDC issuer
     const audience = `${this.region}-${this.account}-tvm`;
@@ -23,6 +26,20 @@ class TVMOidcIssuerStack extends Stack {
       parameterName: '/oidc/allow-list',
       stringValue: allowListedDomains.allowList.join(','),
       description: 'The Allow listed domains for TVM OIDC Provider'
+    });
+
+    //Client ID
+    new ssm.StringParameter(this, 'OIDCClientId', {
+      parameterName: '/oidc/client_id',
+      stringValue: `oidc-tvm-${this.account}`,
+      description: 'The Client ID for TVM provider'
+    });
+
+    //Client Secret
+    new ssm.StringParameter(this, 'OIDCClientSecret', {
+      parameterName: '/oidc/client_secret',
+      stringValue: secretID,
+      description: 'The Client ID for TVM provider'
     });
 
     // IAM Role for Key Generation Lambda
@@ -216,6 +233,10 @@ class TVMOidcIssuerStack extends Stack {
           actions: [
             'qbusiness:Chat',
             'qbusiness:ChatSync',
+            'qbusiness:Retrieve',
+            'qbusiness:SearchRelevantContent',
+            'qbusiness:ListApplications',
+            'qbusiness:ListRetrievers',
             'qbusiness:ListMessages',
             'qbusiness:ListConversations',
             'qbusiness:PutFeedback',
@@ -237,10 +258,151 @@ class TVMOidcIssuerStack extends Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['user-subscriptions:CreateClaim'],
-          resources: ['*']
+          resources: ['*'],
+          conditions: {
+            StringEquals: {
+              'aws:CalledViaLast': "qbusiness.amazonaws.com"
+            }
+          }
         })
       ]
     }));
+
+    /**
+     * Deploy if set to 'true'
+     */
+    if(props.deployQbiz){
+      // Creates a role for the data sources
+      const dataSourceRole = new iam.Role(this, 'QBusinessDataSourceRole', {
+        roleName: 'tvm-qbiz-data-source-role',
+        description: 'Role required for Amazon Q Business data sources.',
+        assumedBy: new iam.ServicePrincipal('qbusiness.amazonaws.com')
+        .withConditions({
+          StringEquals: {
+            'aws:SourceAccount': this.account
+          },
+          ArnEquals: {
+            'aws:SourceArn': `arn:aws:qbusiness:${this.region}:${this.account}:application/*`
+          }
+        })
+      });
+
+      dataSourceRole.attachInlinePolicy(new iam.Policy(this, 'QBizDataSourcePermissions',{
+        statements: [
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToGetObjectfromS3',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              's3:GetObject'
+            ],
+            resources: [`arn:aws:s3:::${process.env.Q_BIZ_S3_SOURCE_BKT}/*`],
+            conditions: {
+              StringEquals: {
+                'aws:ResourceAccount': this.account
+              }
+            }
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToListS3Buckets',
+            effect: iam.Effect.ALLOW,
+            actions: ['s3:ListBucket'],
+            resources: [`arn:aws:s3:::${process.env.Q_BIZ_S3_SOURCE_BKT}`],
+            conditions: {
+              StringEquals: {
+                'aws:ResourceAccount': this.account
+              }
+            }
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToIngestDocuments',
+            effect: iam.Effect.ALLOW,
+            actions: ['qbusiness:BatchPutDocument', 'qbusiness:BatchDeleteDocument'],
+            resources: ['*']
+          }),
+          new iam.PolicyStatement({
+            sid: 'AllowsAmazonQToCallPrincipalMappingAPIs',
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'qbusiness:PutGroup',
+              'qbusiness:CreateUser',
+              'qbusiness:DeleteGroup',
+              'qbusiness:UpdateUser',
+              'qbusiness:ListGroups'
+            ],
+            resources: ['*']
+          })
+        ]
+      }));
+
+      //Creates a role for the external resource lambda that creates the Q Business Application
+      const qBizLambdaRole = new iam.Role(this, 'QBizLambdaRole', {
+        roleName: 'tvm-q-biz-lambda-role',
+        assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
+        ]
+      });
+
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'qbusiness:CreateApplication', 
+          'qbusiness:UpdateApplication', 
+          'qbusiness:CreateIndex', 
+          'qbusiness:CreateRetriever',
+          'qbusiness:CreateDataSource',
+          'qbusiness:StartDataSourceSyncJob',
+          'qbusiness:GetIndex',
+          'qbusiness:GetDataSource',
+          'qbusiness:DeleteApplication',
+          "qbusiness:GetChatControlsConfiguration",
+          "qbusiness:UpdateChatControlsConfiguration",
+          ],
+        resources: ["*"]
+      }));
+
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'iam:PassRole'
+          ],
+        resources: [dataSourceRole.roleArn]
+      }));
+
+      qBizLambdaRole.addToPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'iam:CreateServiceLinkedRole'
+          ],
+        resources: ["*"]
+      }));
+
+      const qBizCreationLambda = new lambda.DockerImageFunction(this, 'QBizCreationLambda', {
+        functionName: 'tvm-q-biz-creation-lambda',
+        code: lambda.DockerImageCode.fromImageAsset('lambdas/q-biz'),
+        handler: 'app.lambda_handler',
+        runtime: lambda.Runtime.PYTHON_3_10,
+        timeout: Duration.minutes(15),
+        role: qBizLambdaRole,
+        environment: {
+          DATA_SOURCE_ROLE: dataSourceRole.roleArn,
+          Q_BIZ_APP_NAME: process.env.Q_BIZ_APP_NAME,
+          IAM_PROVIDER_ARN: oidcIAMProvider.openIdConnectProviderArn,
+          IAM_PROVIDER_AUDIENCE: audience,
+          Q_BIZ_S3_SOURCE_BKT: process.env.Q_BIZ_S3_SOURCE_BKT,
+          Q_BIZ_SEED_URL: process.env.Q_BIZ_SEED_URLS
+        }
+      });
+
+      const qBizAppProvider = new custom_resources.Provider(this, 'QBizAppProvider', {
+        onEventHandler: qBizCreationLambda,
+      });
+  
+      new cdk.CustomResource(this, 'QBizAppCustomResource', {
+        serviceToken: qBizAppProvider.serviceToken,
+      });
+
+    }
 
     // Output Audience Id
     new cdk.CfnOutput(this, 'AudienceOutput', {
@@ -261,6 +423,20 @@ class TVMOidcIssuerStack extends Stack {
       description: 'Amazon Q Business Role to Assume',
       value: qbizIAMRole.roleArn,
       exportName: 'AssumeRoleARN',
+    });
+
+    // Output Client ID
+    new cdk.CfnOutput(this, 'QbizTVMClientID', {
+      description: 'The TVM Client ID',
+      value: `oidc-tvm-${this.account}`,
+      exportName: 'TVMClientID',
+    });
+
+    // Output Client secret
+    new cdk.CfnOutput(this, 'QbizTVMClientSecret', {
+      description: 'The TVM Client Secret',
+      value: secretID,
+      exportName: 'TVMClientSecret',
     });
   }
 }
